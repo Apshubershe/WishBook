@@ -671,7 +671,7 @@ import {
    авторизацию, но закрывает книгу от случайных глаз.
    Пароль хранится только тут; при желании поменяй строку ниже.
    ------------------------------------------------------------------ */
-const VIEW_PASSWORD = "EvaLove";
+const VIEW_PASSWORD = "0301";
 const AUTH_STORAGE_KEY = "wishbook_authed";
 
 function initAuthGate() {
@@ -729,25 +729,25 @@ const wishesCollection = collection(db, "wishes");
    и при отрисовке карточек.
    ------------------------------------------------------------------ */
 const CATEGORIES = [
-  { value: "bouquets",     label: "Букеты",      emoji: "🌸" },
-  { value: "restaurants",  label: "Рестораны",   emoji: "🍽" },
-  { value: "cafes",        label: "Кафе",        emoji: "☕" },
-  { value: "gifts",        label: "Подарки",     emoji: "🎁" },
-  { value: "clothes",      label: "Одежда",      emoji: "👗" },
-  { value: "jewelry",      label: "Украшения",   emoji: "💍" },
-  { value: "travel",       label: "Путешествия", emoji: "✈️" },
-  { value: "entertainment",label: "Развлечения", emoji: "🎮" },
-  { value: "movies",       label: "Фильмы",      emoji: "🎬" },
-  { value: "books",        label: "Книги",       emoji: "📚" },
-  { value: "other",        label: "Другое",      emoji: "❤️" },
+  { value: "Букеты",     label: "Букеты",      emoji: "🌸" },
+  { value: "Рестораны",  label: "Рестораны",   emoji: "🍽" },
+  { value: "Кафе",        label: "Кафе",        emoji: "☕" },
+  { value: "Подарки",        label: "Подарки",     emoji: "🎁" },
+  { value: "Одежда",      label: "Одежда",      emoji: "👗" },
+  { value: "Украшения",      label: "Украшения",   emoji: "💍" },
+  { value: "Путешествия",       label: "Путешествия", emoji: "✈️" },
+  { value: "Развлечения",label: "Развлечения", emoji: "🎮" },
+  { value: "Фильмы",       label: "Фильмы",      emoji: "🎬" },
+  { value: "Книги",        label: "Книги",       emoji: "📚" },
+  { value: "Другое",        label: "Другое",      emoji: "❤️" },
 ];
 
 const PRIORITIES = [
-  { value: "idea",     label: "Просто идея",       emoji: "🤍", stars: 1 },
-  { value: "nice",     label: "Было бы здорово",   emoji: "🙂", stars: 2 },
-  { value: "want",     label: "Очень хочется",     emoji: "😊", stars: 3 },
-  { value: "dream",    label: "Мечтаю",            emoji: "🥹", stars: 4 },
-  { value: "veryMuch", label: "Очень-очень хочу",  emoji: "❤️", stars: 5 },
+  { value: "★",     label: "Просто идея",       emoji: "🤍", stars: 1 },
+  { value: "★★",     label: "Было бы здорово",   emoji: "🙂", stars: 2 },
+  { value: "★★★",     label: "Очень хочется",     emoji: "😊", stars: 3 },
+  { value: "★★★★",    label: "Мечтаю",            emoji: "🥹", stars: 4 },
+  { value: "★★★★★", label: "Очень-очень хочу",  emoji: "❤️", stars: 5 },
 ];
 
 // Вспомогательные функции поиска по value
