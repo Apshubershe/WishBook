@@ -416,9 +416,157 @@
 
   /* Режим чтения — скрываем форму */
   body.read-mode .wish-form-card{ display:none; }
+
+  /* ============================================================
+     ЭКРАН ВХОДА (парольная защита просмотра)
+     ============================================================ */
+  #authGate{
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #FFFDFA 0%, transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, #F8F2E6 0%, transparent 55%),
+      var(--warm-white);
+    padding:20px;
+  }
+  #authGate.hidden{ display:none; }
+
+  .auth-card{
+    width:100%;
+    max-width:360px;
+    background:var(--milky);
+    border:1px solid var(--beige);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-card);
+    padding:36px 30px;
+    text-align:center;
+    animation: fadeUp .6s ease both;
+  }
+  .auth-card .eyebrow{
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--brown-light);
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .auth-card h2{
+    font-size:24px;
+    margin:0 0 6px;
+    color:var(--brown-deep);
+  }
+  .auth-card p{
+    font-size:14px;
+    color:var(--text-soft);
+    margin:0 0 22px;
+  }
+  .auth-card input{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    text-align:center;
+    letter-spacing:0.04em;
+    color:var(--brown-deep);
+    background:var(--milky-soft);
+    border:1px solid var(--beige);
+    border-radius:var(--radius-sm);
+    padding:13px 14px;
+    outline:none;
+    margin-bottom:14px;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .auth-card input:focus{
+    border-color:var(--brown-light);
+    box-shadow:0 0 0 3px rgba(176,141,87,0.14);
+  }
+  .auth-card .auth-error{
+    font-size:13px;
+    color:var(--rose-dust);
+    min-height:18px;
+    margin:-4px 0 12px;
+  }
+  .auth-card .btn-primary{ width:100%; }
+
+  /* ============================================================
+     ДЕЙСТВИЯ НАД КАРТОЧКОЙ (изменить / удалить)
+     ============================================================ */
+  .wish-actions{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .action-btn{
+    flex:1;
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--text-soft);
+    background:var(--milky-soft);
+    border:1px solid var(--beige);
+    border-radius:999px;
+    padding:8px 0;
+    cursor:pointer;
+    transition:all .18s ease;
+  }
+  .action-btn:hover{
+    border-color:var(--beige-deep);
+    color:var(--brown-deep);
+  }
+  .action-btn.danger:hover{
+    color:#B0574A;
+    border-color:rgba(176,87,74,0.4);
+  }
+  /* В режиме чтения действия скрыты — только просмотр */
+  body.read-mode .wish-actions{ display:none; }
+
+  .editing-badge{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    font-size:13px;
+    color:var(--brown-mid);
+    background:rgba(176,141,87,0.1);
+    border:1px solid rgba(176,141,87,0.25);
+    border-radius:999px;
+    padding:8px 16px;
+    margin-bottom:18px;
+  }
+  .editing-badge.visible{ display:flex; }
+  .editing-badge button{
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--brown-deep);
+    background:none;
+    border:none;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:0;
+  }
 </style>
 </head>
 <body>
+
+  <!-- ============================================================
+       ЭКРАН ВХОДА — просмотр книги закрыт паролем
+       ============================================================ -->
+  <div id="authGate">
+    <div class="auth-card">
+      <div class="eyebrow">WishBook</div>
+      <h2>Личная книга</h2>
+      <p>Введи пароль, чтобы открыть</p>
+      <form id="authForm">
+        <input type="password" id="authInput" placeholder="Пароль" autocomplete="off">
+        <div class="auth-error" id="authError"></div>
+        <button type="submit" class="btn-primary">Войти</button>
+      </form>
+    </div>
+  </div>
 
   <div class="page">
 
@@ -438,6 +586,11 @@
     <section class="wish-form-card" id="wishFormCard">
       <h2>Новое желание</h2>
       <p class="form-sub">Запиши то, о чём мечтаешь — сейчас или когда-нибудь.</p>
+
+      <div class="editing-badge" id="editingBadge">
+        <span>✎ Ты редактируешь желание</span>
+        <button type="button" id="cancelEditBtn">Отменить</button>
+      </div>
 
       <form id="wishForm">
         <div class="form-grid">
@@ -508,9 +661,46 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot,
+  getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot,
   query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ------------------------------------------------------------------
+   0. ПАРОЛЬ ПРОСМОТРА
+   Простая защита от посторонних ссылок — не заменяет полноценную
+   авторизацию, но закрывает книгу от случайных глаз.
+   Пароль хранится только тут; при желании поменяй строку ниже.
+   ------------------------------------------------------------------ */
+const VIEW_PASSWORD = "EvaLove";
+const AUTH_STORAGE_KEY = "wishbook_authed";
+
+function initAuthGate() {
+  const gate = document.getElementById("authGate");
+  const form = document.getElementById("authForm");
+  const input = document.getElementById("authInput");
+  const errorEl = document.getElementById("authError");
+
+  // Уже входили в этой вкладке — не спрашиваем пароль повторно
+  if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+    gate.classList.add("hidden");
+    return;
+  }
+
+  input.focus();
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (input.value === VIEW_PASSWORD) {
+      sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+      gate.classList.add("hidden");
+      errorEl.textContent = "";
+    } else {
+      errorEl.textContent = "Неверный пароль, попробуй ещё раз";
+      input.value = "";
+      input.focus();
+    }
+  });
+}
 
 /* ------------------------------------------------------------------
    1. КОНФИГУРАЦИЯ FIREBASE
@@ -539,25 +729,25 @@ const wishesCollection = collection(db, "wishes");
    и при отрисовке карточек.
    ------------------------------------------------------------------ */
 const CATEGORIES = [
-  { value: "Букеты",     label: "Букеты",      emoji: "🌸" },
-  { value: "Рестораны",  label: "Рестораны",   emoji: "🍽" },
-  { value: "Кафе",        label: "Кафе",        emoji: "☕" },
-  { value: "Подарки",        label: "Подарки",     emoji: "🎁" },
-  { value: "Одежда",      label: "Одежда",      emoji: "👗" },
-  { value: "Украшения",      label: "Украшения",   emoji: "💍" },
-  { value: "Путешествия",       label: "Путешествия", emoji: "✈️" },
-  { value: "Развлечения",label: "Развлечения", emoji: "🎮" },
-  { value: "Фильмы",       label: "Фильмы",      emoji: "🎬" },
-  { value: "Книги",        label: "Книги",       emoji: "📚" },
-  { value: "Другое",        label: "Другое",      emoji: "❤️" },
+  { value: "bouquets",     label: "Букеты",      emoji: "🌸" },
+  { value: "restaurants",  label: "Рестораны",   emoji: "🍽" },
+  { value: "cafes",        label: "Кафе",        emoji: "☕" },
+  { value: "gifts",        label: "Подарки",     emoji: "🎁" },
+  { value: "clothes",      label: "Одежда",      emoji: "👗" },
+  { value: "jewelry",      label: "Украшения",   emoji: "💍" },
+  { value: "travel",       label: "Путешествия", emoji: "✈️" },
+  { value: "entertainment",label: "Развлечения", emoji: "🎮" },
+  { value: "movies",       label: "Фильмы",      emoji: "🎬" },
+  { value: "books",        label: "Книги",       emoji: "📚" },
+  { value: "other",        label: "Другое",      emoji: "❤️" },
 ];
 
 const PRIORITIES = [
-  { value: "★",     label: "Просто идея",       emoji: "🤍", stars: 1 },
-  { value: "★★",     label: "Было бы здорово",   emoji: "🙂", stars: 2 },
-  { value: "★★★",     label: "Очень хочется",     emoji: "😊", stars: 3 },
-  { value: "★★★★",    label: "Мечтаю",            emoji: "🥹", stars: 4 },
-  { value: "★★★★★", label: "Очень-очень хочу",  emoji: "❤️", stars: 5 },
+  { value: "idea",     label: "Просто идея",       emoji: "🤍", stars: 1 },
+  { value: "nice",     label: "Было бы здорово",   emoji: "🙂", stars: 2 },
+  { value: "want",     label: "Очень хочется",     emoji: "😊", stars: 3 },
+  { value: "dream",    label: "Мечтаю",            emoji: "🥹", stars: 4 },
+  { value: "veryMuch", label: "Очень-очень хочу",  emoji: "❤️", stars: 5 },
 ];
 
 // Вспомогательные функции поиска по value
@@ -632,6 +822,7 @@ function initFilterChips() {
    ------------------------------------------------------------------ */
 let allWishes = [];      // все желания, полученные из Firestore (уже отсортированы по дате)
 let searchTerm = "";     // текущий поисковый запрос
+let editingWishId = null; // id желания, которое сейчас редактируется (null — режим добавления)
 
 /* ------------------------------------------------------------------
    7. ПОДПИСКА НА FIRESTORE (реалтайм-обновления)
@@ -644,6 +835,20 @@ function listenToWishes() {
   }, error => {
     console.error("Ошибка чтения желаний из Firestore:", error);
   });
+}
+
+/* ------------------------------------------------------------------
+   7.1. ПОСЛЕДОВАТЕЛЬНЫЕ НОМЕРА ДОКУМЕНТОВ
+   Вместо случайных ID Firestore (addDoc) используем свои номера
+   1, 2, 3... — так документы в консоли Firebase идут по порядку.
+   Следующий номер = (максимальный существующий) + 1.
+   ------------------------------------------------------------------ */
+function getNextWishId() {
+  const numericIds = allWishes
+    .map(w => parseInt(w.id, 10))
+    .filter(n => !isNaN(n));
+  const maxId = numericIds.length ? Math.max(...numericIds) : 0;
+  return maxId + 1;
 }
 
 /* ------------------------------------------------------------------
@@ -692,13 +897,20 @@ function renderWishes() {
 function formatDate(timestamp) {
   if (!timestamp || !timestamp.toDate) return "";
   const date = timestamp.toDate();
-  // Дата отображается по времени Казахстана (Алматы)
-  return date.toLocaleDateString("ru-RU", {
+  // Дата и время отображаются по времени Казахстана (Алматы), формат времени — 24 часа
+  const datePart = date.toLocaleDateString("ru-RU", {
     day: "numeric",
     month: "long",
     year: "numeric",
     timeZone: "Asia/Almaty",
   });
+  const timePart = date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Almaty",
+  });
+  return `${datePart}, ${timePart}`;
 }
 
 // Строка из звёзд по количеству (1–5), отражает уровень желания
@@ -726,7 +938,15 @@ function createWishCard(wish) {
     </div>
     <div class="date-row">${formatDate(wish.createdAt)}</div>
     ${wish.link ? `<a class="open-link" href="${escapeAttr(wish.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>` : ""}
+    <div class="wish-actions">
+      <button type="button" class="action-btn edit-btn" data-id="${wish.id}">✎ Изменить</button>
+      <button type="button" class="action-btn danger delete-btn" data-id="${wish.id}">🗑 Удалить</button>
+    </div>
   `;
+
+  card.querySelector(".edit-btn").addEventListener("click", () => startEditWish(wish));
+  card.querySelector(".delete-btn").addEventListener("click", () => deleteWish(wish.id));
+
   return card;
 }
 
@@ -741,7 +961,7 @@ function escapeAttr(str) {
 }
 
 /* ------------------------------------------------------------------
-   10. ОБРАБОТКА ФОРМЫ — СОХРАНЕНИЕ НОВОГО ЖЕЛАНИЯ
+   10. ОБРАБОТКА ФОРМЫ — СОХРАНЕНИЕ НОВОГО ИЛИ ОБНОВЛЕНИЕ СУЩЕСТВУЮЩЕГО ЖЕЛАНИЯ
    ------------------------------------------------------------------ */
 function initWishForm() {
   const form = document.getElementById("wishForm");
@@ -750,34 +970,82 @@ function initWishForm() {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const newWish = {
+    const wishData = {
       category: document.getElementById("fCategory").value,
       title: document.getElementById("fTitle").value.trim(),
       description: document.getElementById("fDescription").value.trim(),
       link: document.getElementById("fLink").value.trim(),
       priority: document.getElementById("fPriority").value,
-      createdAt: serverTimestamp(),
     };
 
-    if (!newWish.category || !newWish.title || !newWish.description || !newWish.priority) {
+    if (!wishData.category || !wishData.title || !wishData.description || !wishData.priority) {
       return; // required-атрибуты в HTML уже подсвечивают пустые поля
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = "Сохраняем...";
 
     try {
-      await addDoc(wishesCollection, newWish);
-      form.reset();
-      initFormSelects(); // возвращаем плейсхолдеры в select после reset
+      if (editingWishId) {
+        // Обновляем существующее желание — дату создания не трогаем
+        submitBtn.textContent = "Сохраняем изменения...";
+        await updateDoc(doc(db, "wishes", editingWishId), wishData);
+      } else {
+        // Создаём новое желание с последовательным номером
+        submitBtn.textContent = "Сохраняем...";
+        wishData.createdAt = serverTimestamp();
+        const nextId = getNextWishId();
+        await setDoc(doc(db, "wishes", String(nextId)), wishData);
+      }
+      exitEditMode();
     } catch (error) {
       console.error("Не удалось сохранить желание:", error);
       alert("Не получилось сохранить желание. Проверь подключение и настройки Firebase.");
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = "Сохранить желание";
+      submitBtn.textContent = editingWishId ? "Сохранить изменения" : "Сохранить желание";
     }
   });
+
+  document.getElementById("cancelEditBtn").addEventListener("click", exitEditMode);
+}
+
+// Заполняет форму данными выбранного желания и переводит её в режим редактирования
+function startEditWish(wish) {
+  editingWishId = wish.id;
+
+  document.getElementById("fCategory").value = wish.category || "";
+  document.getElementById("fPriority").value = wish.priority || "";
+  document.getElementById("fTitle").value = wish.title || "";
+  document.getElementById("fDescription").value = wish.description || "";
+  document.getElementById("fLink").value = wish.link || "";
+
+  document.getElementById("editingBadge").classList.add("visible");
+  document.getElementById("submitBtn").textContent = "Сохранить изменения";
+
+  document.getElementById("wishFormCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Возвращает форму в обычный режим добавления нового желания
+function exitEditMode() {
+  editingWishId = null;
+  document.getElementById("wishForm").reset();
+  initFormSelects();
+  document.getElementById("editingBadge").classList.remove("visible");
+  document.getElementById("submitBtn").textContent = "Сохранить желание";
+}
+
+// Удаляет желание после подтверждения
+async function deleteWish(id) {
+  const confirmed = confirm("Удалить это желание? Это действие нельзя отменить.");
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "wishes", id));
+    if (editingWishId === id) exitEditMode();
+  } catch (error) {
+    console.error("Не удалось удалить желание:", error);
+    alert("Не получилось удалить желание. Проверь подключение и настройки Firebase.");
+  }
 }
 
 /* ------------------------------------------------------------------
@@ -795,6 +1063,7 @@ function initSearch() {
    12. ТОЧКА ВХОДА
    ------------------------------------------------------------------ */
 function init() {
+  initAuthGate();
   initFormSelects();
   initFilterChips();
   initWishForm();
@@ -809,9 +1078,8 @@ init();
    - loadPhoto(file) → Firebase Storage, поле photoUrl в документе
    - toggleFavorite(wishId) → поле isFavorite: boolean
    - addComment(wishId, text) → подколлекция wishes/{id}/comments
-   - editWish(wishId, data) → updateDoc(doc(db, "wishes", wishId), data)
-   - deleteWish(wishId) → deleteDoc(doc(db, "wishes", wishId))
-   - onAuthStateChanged → фильтрация wishes по ownerId для многопользовательского режима
+   - onAuthStateChanged → полноценная авторизация вместо пароля-заглушки,
+     фильтрация wishes по ownerId для многопользовательского режима
    ------------------------------------------------------------------ */
 </script>
 </body>
