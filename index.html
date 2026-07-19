@@ -337,10 +337,6 @@
     border-radius:999px;
     padding:5px 11px;
   }
-  .meta-badge.status-want{ color:var(--rose-dust); border-color:rgba(192,135,114,0.35); }
-  .meta-badge.status-gifted{ color:var(--gold-dust); border-color:rgba(201,166,107,0.4); }
-  .meta-badge.status-done{ color:var(--sage); border-color:rgba(147,163,130,0.4); }
-
   .wish-card .date-row{
     font-size:12px;
     color:var(--text-soft);
@@ -464,11 +460,6 @@
             <input type="url" id="fLink" placeholder="https://...">
           </div>
 
-          <div class="form-field">
-            <label for="fStatus">Статус</label>
-            <select id="fStatus" required></select>
-          </div>
-
         </div>
 
         <div class="form-actions">
@@ -522,12 +513,13 @@ import {
      match /wishes/{docId} { allow read, write: if true; }
    ------------------------------------------------------------------ */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCOjsXzRzzGw9C3xIzelukf2eQI9N8iMrA",
+  authDomain: "projectname-4b221.firebaseapp.com",
+  projectId: "projectname-4b221",
+  storageBucket: "projectname-4b221.firebasestorage.app",
+  messagingSenderId: "41722781863",
+  appId: "1:41722781863:web:4b20f914a8fdc088fcbb82",
+  measurementId: "G-L3ZTQD40YM"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -561,16 +553,9 @@ const PRIORITIES = [
   { value: "veryMuch", label: "Очень-очень хочу",  emoji: "❤️" },
 ];
 
-const STATUSES = [
-  { value: "want",   label: "Хочу",       emoji: "❤️", cls: "status-want"   },
-  { value: "gifted", label: "Подарено",   emoji: "🎁", cls: "status-gifted" },
-  { value: "done",   label: "Исполнилось",emoji: "✅", cls: "status-done"   },
-];
-
 // Вспомогательные функции поиска по value
 const findCategory = v => CATEGORIES.find(c => c.value === v) || CATEGORIES[CATEGORIES.length - 1];
 const findPriority  = v => PRIORITIES.find(p => p.value === v) || PRIORITIES[0];
-const findStatus    = v => STATUSES.find(s => s.value === v) || STATUSES[0];
 
 /* ------------------------------------------------------------------
    3. РЕЖИМ ЧТЕНИЯ (index.html#read)
@@ -607,7 +592,6 @@ function fillSelect(selectEl, items, { withDefault } = {}) {
 function initFormSelects() {
   fillSelect(document.getElementById("fCategory"), CATEGORIES, { withDefault: "Выбери категорию" });
   fillSelect(document.getElementById("fPriority"), PRIORITIES, { withDefault: "Насколько сильно хочется" });
-  fillSelect(document.getElementById("fStatus"), STATUSES);
 }
 
 /* ------------------------------------------------------------------
@@ -707,7 +691,6 @@ function formatDate(timestamp) {
 function createWishCard(wish) {
   const category = findCategory(wish.category);
   const priority = findPriority(wish.priority);
-  const status = findStatus(wish.status);
 
   const card = document.createElement("article");
   card.className = "wish-card";
@@ -718,7 +701,6 @@ function createWishCard(wish) {
     ${wish.description ? `<p class="wish-desc">${escapeHtml(wish.description)}</p>` : ""}
     <div class="meta-row">
       <span class="meta-badge">${priority.emoji} ${priority.label}</span>
-      <span class="meta-badge ${status.cls}">${status.emoji} ${status.label}</span>
     </div>
     <div class="date-row">${formatDate(wish.createdAt)}</div>
     ${wish.link ? `<a class="open-link" href="${escapeAttr(wish.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>` : ""}
@@ -752,11 +734,10 @@ function initWishForm() {
       description: document.getElementById("fDescription").value.trim(),
       link: document.getElementById("fLink").value.trim(),
       priority: document.getElementById("fPriority").value,
-      status: document.getElementById("fStatus").value,
       createdAt: serverTimestamp(),
     };
 
-    if (!newWish.category || !newWish.title || !newWish.description || !newWish.priority || !newWish.status) {
+    if (!newWish.category || !newWish.title || !newWish.description || !newWish.priority) {
       return; // required-атрибуты в HTML уже подсвечивают пустые поля
     }
 
