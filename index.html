@@ -337,6 +337,13 @@
     border-radius:999px;
     padding:5px 11px;
   }
+  .priority-stars .stars{
+    color:var(--brown-light);
+    letter-spacing:2px;
+    font-size:14px;
+    line-height:1;
+  }
+
   .wish-card .date-row{
     font-size:12px;
     color:var(--text-soft);
@@ -546,11 +553,11 @@ const CATEGORIES = [
 ];
 
 const PRIORITIES = [
-  { value: "idea",     label: "Просто идея",       emoji: "🤍" },
-  { value: "nice",     label: "Было бы здорово",   emoji: "🙂" },
-  { value: "want",     label: "Очень хочется",     emoji: "😊" },
-  { value: "dream",    label: "Мечтаю",            emoji: "🥹" },
-  { value: "veryMuch", label: "Очень-очень хочу",  emoji: "❤️" },
+  { value: "idea",     label: "Просто идея",       emoji: "🤍", stars: 1 },
+  { value: "nice",     label: "Было бы здорово",   emoji: "🙂", stars: 2 },
+  { value: "want",     label: "Очень хочется",     emoji: "😊", stars: 3 },
+  { value: "dream",    label: "Мечтаю",            emoji: "🥹", stars: 4 },
+  { value: "veryMuch", label: "Очень-очень хочу",  emoji: "❤️", stars: 5 },
 ];
 
 // Вспомогательные функции поиска по value
@@ -685,7 +692,20 @@ function renderWishes() {
 function formatDate(timestamp) {
   if (!timestamp || !timestamp.toDate) return "";
   const date = timestamp.toDate();
-  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+  // Дата отображается по времени Казахстана (Алматы)
+  return date.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Almaty",
+  });
+}
+
+// Строка из звёзд по количеству (1–5), отражает уровень желания
+function renderStars(count) {
+  const filled = "★".repeat(count);
+  const empty = "☆".repeat(5 - count);
+  return filled + empty;
 }
 
 function createWishCard(wish) {
@@ -700,7 +720,9 @@ function createWishCard(wish) {
     <h3>${escapeHtml(wish.title || "")}</h3>
     ${wish.description ? `<p class="wish-desc">${escapeHtml(wish.description)}</p>` : ""}
     <div class="meta-row">
-      <span class="meta-badge">${priority.emoji} ${priority.label}</span>
+      <span class="meta-badge priority-stars" title="${escapeAttr(priority.label)}">
+        <span class="stars">${renderStars(priority.stars)}</span>
+      </span>
     </div>
     <div class="date-row">${formatDate(wish.createdAt)}</div>
     ${wish.link ? `<a class="open-link" href="${escapeAttr(wish.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>` : ""}
