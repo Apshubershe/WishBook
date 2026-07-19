@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WishBook — книга желаний</title>
+
+<!-- Шрифты: Newsreader (заголовки, книжный характер) + Inter (интерфейс) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     ДИЗАЙН-ТОКЕНЫ
+     Палитра: молочный / бежевый / светло-коричневый / тёплый белый
+     ============================================================ */
+  :root{
+    --warm-white:   #FBF8F3;   /* фон страницы */
+    --milky:        #F6F1E8;   /* карточки */
+    --milky-soft:   #FDFBF8;   /* поле ввода */
+    --beige:        #E9DFCC;   /* границы, разделители */
+    --beige-deep:   #D9CBAE;   /* границы активных элементов */
+    --brown-light:  #B08D57;   /* акцент, кнопки */
+    --brown-mid:    #8C6F45;   /* акцент hover */
+    --brown-deep:   #4A3B2A;   /* основной текст, заголовки */
+    --text-soft:    #8A7E6E;   /* второстепенный текст */
+    --rose-dust:    #C08772;   /* статус "хочу" — приглушённый терракот */
+    --sage:         #93A382;   /* статус "исполнилось" — приглушённая шалфейная */
+    --gold-dust:    #C9A66B;   /* статус "подарено" */
+    --shadow-card:  0 2px 8px rgba(74,59,42,0.06), 0 12px 32px rgba(74,59,42,0.06);
+    --shadow-card-hover: 0 4px 14px rgba(74,59,42,0.10), 0 20px 44px rgba(74,59,42,0.10);
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #FFFDFA 0%, transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, #F8F2E6 0%, transparent 55%),
+      var(--warm-white);
+    color:var(--brown-deep);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  h1,h2,h3, .display{
+    font-family:'Newsreader', serif;
+    font-weight:500;
+    letter-spacing:-0.01em;
+  }
+
+  /* ============================================================
+     ШАПКА / ТИТУЛ КНИГИ
+     ============================================================ */
+  .page{
+    max-width:920px;
+    margin:0 auto;
+    padding:56px 24px 120px;
+  }
+
+  .hero{
+    text-align:center;
+    margin-bottom:52px;
+    animation: fadeUp .8s ease both;
+  }
+
+  .hero .eyebrow{
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--brown-light);
+    font-weight:600;
+    margin-bottom:14px;
+  }
+
+  .hero h1{
+    font-size:44px;
+    line-height:1.15;
+    margin:0 0 14px;
+    color:var(--brown-deep);
+  }
+  .hero h1 em{
+    font-style:italic;
+    color:var(--brown-light);
+  }
+
+  .hero p{
+    font-family:'Newsreader', serif;
+    font-style:italic;
+    font-size:18px;
+    color:var(--text-soft);
+    max-width:480px;
+    margin:0 auto;
+    line-height:1.5;
+  }
+
+  /* Тонкая декоративная линия — как разделитель страниц книги */
+  .hero .divider{
+    width:52px;
+    height:1px;
+    background:var(--beige-deep);
+    margin:24px auto 0;
+  }
+
+  /* ============================================================
+     ФОРМА ДОБАВЛЕНИЯ ЖЕЛАНИЯ — большая красивая карточка
+     ============================================================ */
+  .wish-form-card{
+    background:var(--milky);
+    border:1px solid var(--beige);
+    border-radius:var(--radius-lg);
+    padding:36px;
+    box-shadow:var(--shadow-card);
+    margin-bottom:56px;
+    animation: fadeUp .8s ease .05s both;
+  }
+
+  .wish-form-card h2{
+    font-size:22px;
+    margin:0 0 4px;
+    color:var(--brown-deep);
+  }
+  .wish-form-card .form-sub{
+    font-size:14px;
+    color:var(--text-soft);
+    margin:0 0 26px;
+  }
+
+  .form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px 20px;
+  }
+  .form-field{ display:flex; flex-direction:column; gap:7px; }
+  .form-field.full{ grid-column:1 / -1; }
+
+  .form-field label{
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--text-soft);
+  }
+
+  .form-field input,
+  .form-field select,
+  .form-field textarea{
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    color:var(--brown-deep);
+    background:var(--milky-soft);
+    border:1px solid var(--beige);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+    width:100%;
+  }
+  .form-field textarea{
+    resize:vertical;
+    min-height:96px;
+    line-height:1.5;
+  }
+  .form-field input:focus,
+  .form-field select:focus,
+  .form-field textarea:focus{
+    border-color:var(--brown-light);
+    box-shadow:0 0 0 3px rgba(176,141,87,0.14);
+  }
+  .form-field select{ cursor:pointer; }
+
+  .form-actions{
+    margin-top:26px;
+    display:flex;
+    justify-content:flex-end;
+  }
+
+  .btn-primary{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    color:var(--warm-white);
+    background:linear-gradient(180deg, var(--brown-light), var(--brown-mid));
+    border:none;
+    border-radius:999px;
+    padding:13px 30px;
+    cursor:pointer;
+    box-shadow:0 6px 16px rgba(140,111,69,0.28);
+    transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  }
+  .btn-primary:hover{
+    transform:translateY(-1px);
+    box-shadow:0 10px 22px rgba(140,111,69,0.34);
+    filter:brightness(1.03);
+  }
+  .btn-primary:active{ transform:translateY(0); }
+
+  /* ============================================================
+     ПАНЕЛЬ ПОИСКА И ФИЛЬТРОВ
+     ============================================================ */
+  .toolbar{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-bottom:36px;
+    animation: fadeUp .8s ease .1s both;
+  }
+
+  .search-wrap{
+    position:relative;
+  }
+  .search-wrap input{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    color:var(--brown-deep);
+    background:var(--milky-soft);
+    border:1px solid var(--beige);
+    border-radius:999px;
+    padding:13px 20px 13px 42px;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .search-wrap input:focus{
+    border-color:var(--brown-light);
+    box-shadow:0 0 0 3px rgba(176,141,87,0.14);
+  }
+  .search-wrap svg{
+    position:absolute;
+    left:16px; top:50%;
+    transform:translateY(-50%);
+    color:var(--text-soft);
+  }
+
+  .filter-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .filter-chip{
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:500;
+    color:var(--brown-deep);
+    background:var(--milky);
+    border:1px solid var(--beige);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .18s ease;
+  }
+  .filter-chip:hover{
+    border-color:var(--beige-deep);
+    background:var(--milky-soft);
+  }
+  .filter-chip.active{
+    background:var(--brown-deep);
+    color:var(--warm-white);
+    border-color:var(--brown-deep);
+  }
+
+  /* ============================================================
+     СЕТКА КАРТОЧЕК ЖЕЛАНИЙ
+     ============================================================ */
+  .wish-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:22px;
+  }
+
+  .wish-card{
+    position:relative;
+    background:var(--milky);
+    border:1px solid var(--beige);
+    border-radius:var(--radius-lg);
+    padding:26px 24px 22px;
+    box-shadow:var(--shadow-card);
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    animation: cardIn .55s cubic-bezier(.22,.61,.36,1) both;
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .wish-card:hover{
+    transform:translateY(-3px);
+    box-shadow:var(--shadow-card-hover);
+    border-color:var(--beige-deep);
+  }
+
+  .wish-card .category-tag{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--brown-light);
+  }
+
+  .wish-card h3{
+    font-size:21px;
+    line-height:1.28;
+    margin:2px 0 2px;
+    color:var(--brown-deep);
+  }
+
+  .wish-card .wish-desc{
+    font-size:14.5px;
+    line-height:1.6;
+    color:var(--text-soft);
+    white-space:pre-wrap;
+    margin:0;
+  }
+
+  .wish-card .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:8px;
+  }
+
+  .meta-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--brown-deep);
+    background:var(--milky-soft);
+    border:1px solid var(--beige);
+    border-radius:999px;
+    padding:5px 11px;
+  }
+  .meta-badge.status-want{ color:var(--rose-dust); border-color:rgba(192,135,114,0.35); }
+  .meta-badge.status-gifted{ color:var(--gold-dust); border-color:rgba(201,166,107,0.4); }
+  .meta-badge.status-done{ color:var(--sage); border-color:rgba(147,163,130,0.4); }
+
+  .wish-card .date-row{
+    font-size:12px;
+    color:var(--text-soft);
+    margin-top:2px;
+  }
+
+  .wish-card .open-link{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    margin-top:10px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--warm-white);
+    background:var(--brown-deep);
+    border-radius:999px;
+    padding:10px 0;
+    text-decoration:none;
+    transition:background .2s ease, transform .18s ease;
+  }
+  .wish-card .open-link:hover{
+    background:var(--brown-mid);
+    transform:translateY(-1px);
+  }
+
+  /* Пустое состояние */
+  .empty-state{
+    text-align:center;
+    padding:70px 20px;
+    color:var(--text-soft);
+    animation: fadeUp .6s ease both;
+  }
+  .empty-state .display{
+    font-size:22px;
+    font-style:italic;
+    color:var(--brown-deep);
+    margin-bottom:8px;
+  }
+
+  /* ============================================================
+     АНИМАЦИИ
+     ============================================================ */
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(10px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+
+  /* ============================================================
+     МОБИЛЬНАЯ ВЕРСИЯ
+     ============================================================ */
+  @media (max-width: 640px){
+    .page{ padding:36px 16px 100px; }
+    .hero h1{ font-size:32px; }
+    .wish-form-card{ padding:24px 18px; }
+    .form-grid{ grid-template-columns:1fr; }
+    .wish-grid{ grid-template-columns:1fr; }
+    .form-actions{ justify-content:stretch; }
+    .btn-primary{ width:100%; }
+  }
+
+  /* Режим чтения — скрываем форму */
+  body.read-mode .wish-form-card{ display:none; }
+</style>
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- ============================================================
+         ШАПКА: заголовок книги желаний
+         ============================================================ -->
+    <header class="hero">
+      <div class="eyebrow">WishBook</div>
+      <h1>Место, где сохраняются <em>мечты</em></h1>
+      <p>Маленькие желания однажды становятся воспоминаниями.</p>
+      <div class="divider"></div>
+    </header>
+
+    <!-- ============================================================
+         ФОРМА ДОБАВЛЕНИЯ ЖЕЛАНИЯ (скрывается в режиме чтения #read)
+         ============================================================ -->
+    <section class="wish-form-card" id="wishFormCard">
+      <h2>Новое желание</h2>
+      <p class="form-sub">Запиши то, о чём мечтаешь — сейчас или когда-нибудь.</p>
+
+      <form id="wishForm">
+        <div class="form-grid">
+
+          <div class="form-field">
+            <label for="fCategory">Категория</label>
+            <select id="fCategory" required></select>
+          </div>
+
+          <div class="form-field">
+            <label for="fPriority">Насколько сильно хочется</label>
+            <select id="fPriority" required></select>
+          </div>
+
+          <div class="form-field full">
+            <label for="fTitle">Название</label>
+            <input type="text" id="fTitle" placeholder="Например: Букет пионов" required maxlength="120">
+          </div>
+
+          <div class="form-field full">
+            <label for="fDescription">Описание</label>
+            <textarea id="fDescription" placeholder="Расскажи об этом подробнее..." required></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="fLink">Ссылка <span style="text-transform:none; font-weight:400;">(необязательно)</span></label>
+            <input type="url" id="fLink" placeholder="https://...">
+          </div>
+
+          <div class="form-field">
+            <label for="fStatus">Статус</label>
+            <select id="fStatus" required></select>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" id="submitBtn">Сохранить желание</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================
+         ПОИСК И ФИЛЬТРЫ
+         ============================================================ -->
+    <section class="toolbar" id="toolbar">
+      <div class="search-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Искать по названию, описанию или категории...">
+      </div>
+      <div class="filter-row" id="filterRow"></div>
+    </section>
+
+    <!-- ============================================================
+         СЕТКА ЖЕЛАНИЙ
+         ============================================================ -->
+    <section class="wish-grid" id="wishGrid"></section>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="display">Здесь пока пусто</div>
+      <div>Первая мечта появится тут, как только ты её запишешь.</div>
+    </div>
+
+  </div>
+
+<script type="module">
+/* ==================================================================
+   WISHBOOK — логика приложения
+   Код разделён на логические блоки, подготовлен для расширения:
+   фото (Firebase Storage), избранное, комментарии, редактирование,
+   удаление, авторизация, несколько пользователей.
+   ================================================================== */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, onSnapshot,
+  query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ------------------------------------------------------------------
+   1. КОНФИГУРАЦИЯ FIREBASE
+   Вставь сюда конфиг своего проекта из Firebase Console
+   (Project settings → General → Your apps → SDK setup and configuration).
+   Правила Firestore (уже настроены отдельно):
+     match /wishes/{docId} { allow read, write: if true; }
+   ------------------------------------------------------------------ */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const wishesCollection = collection(db, "wishes");
+
+/* ------------------------------------------------------------------
+   2. СПРАВОЧНИКИ (категории, приоритеты, статусы)
+   Единый источник правды — используется и в форме, и в фильтрах,
+   и при отрисовке карточек.
+   ------------------------------------------------------------------ */
+const CATEGORIES = [
+  { value: "bouquets",     label: "Букеты",      emoji: "🌸" },
+  { value: "restaurants",  label: "Рестораны",   emoji: "🍽" },
+  { value: "cafes",        label: "Кафе",        emoji: "☕" },
+  { value: "gifts",        label: "Подарки",     emoji: "🎁" },
+  { value: "clothes",      label: "Одежда",      emoji: "👗" },
+  { value: "jewelry",      label: "Украшения",   emoji: "💍" },
+  { value: "travel",       label: "Путешествия", emoji: "✈️" },
+  { value: "entertainment",label: "Развлечения", emoji: "🎮" },
+  { value: "movies",       label: "Фильмы",      emoji: "🎬" },
+  { value: "books",        label: "Книги",       emoji: "📚" },
+  { value: "other",        label: "Другое",      emoji: "❤️" },
+];
+
+const PRIORITIES = [
+  { value: "idea",     label: "Просто идея",       emoji: "🤍" },
+  { value: "nice",     label: "Было бы здорово",   emoji: "🙂" },
+  { value: "want",     label: "Очень хочется",     emoji: "😊" },
+  { value: "dream",    label: "Мечтаю",            emoji: "🥹" },
+  { value: "veryMuch", label: "Очень-очень хочу",  emoji: "❤️" },
+];
+
+const STATUSES = [
+  { value: "want",   label: "Хочу",       emoji: "❤️", cls: "status-want"   },
+  { value: "gifted", label: "Подарено",   emoji: "🎁", cls: "status-gifted" },
+  { value: "done",   label: "Исполнилось",emoji: "✅", cls: "status-done"   },
+];
+
+// Вспомогательные функции поиска по value
+const findCategory = v => CATEGORIES.find(c => c.value === v) || CATEGORIES[CATEGORIES.length - 1];
+const findPriority  = v => PRIORITIES.find(p => p.value === v) || PRIORITIES[0];
+const findStatus    = v => STATUSES.find(s => s.value === v) || STATUSES[0];
+
+/* ------------------------------------------------------------------
+   3. РЕЖИМ ЧТЕНИЯ (index.html#read)
+   В этом режиме форма добавления скрыта — только просмотр.
+   ------------------------------------------------------------------ */
+function applyReadModeIfNeeded() {
+  const isReadMode = window.location.hash === "#read";
+  document.body.classList.toggle("read-mode", isReadMode);
+}
+applyReadModeIfNeeded();
+window.addEventListener("hashchange", applyReadModeIfNeeded);
+
+/* ------------------------------------------------------------------
+   4. ЗАПОЛНЕНИЕ ВЫПАДАЮЩИХ СПИСКОВ ФОРМЫ
+   ------------------------------------------------------------------ */
+function fillSelect(selectEl, items, { withDefault } = {}) {
+  selectEl.innerHTML = "";
+  if (withDefault) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = withDefault;
+    opt.disabled = true;
+    opt.selected = true;
+    selectEl.appendChild(opt);
+  }
+  items.forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item.value;
+    opt.textContent = `${item.emoji} ${item.label}`;
+    selectEl.appendChild(opt);
+  });
+}
+
+function initFormSelects() {
+  fillSelect(document.getElementById("fCategory"), CATEGORIES, { withDefault: "Выбери категорию" });
+  fillSelect(document.getElementById("fPriority"), PRIORITIES, { withDefault: "Насколько сильно хочется" });
+  fillSelect(document.getElementById("fStatus"), STATUSES);
+}
+
+/* ------------------------------------------------------------------
+   5. ПАНЕЛЬ ФИЛЬТРОВ ПО КАТЕГОРИЯМ
+   ------------------------------------------------------------------ */
+let activeCategoryFilter = "all";
+
+function initFilterChips() {
+  const filterRow = document.getElementById("filterRow");
+  const chips = [{ value: "all", label: "Все", emoji: "✨" }, ...CATEGORIES];
+
+  filterRow.innerHTML = "";
+  chips.forEach(chip => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "filter-chip" + (chip.value === "all" ? " active" : "");
+    btn.dataset.value = chip.value;
+    btn.textContent = `${chip.emoji} ${chip.label}`;
+    btn.addEventListener("click", () => {
+      activeCategoryFilter = chip.value;
+      filterRow.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      renderWishes();
+    });
+    filterRow.appendChild(btn);
+  });
+}
+
+/* ------------------------------------------------------------------
+   6. СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+   ------------------------------------------------------------------ */
+let allWishes = [];      // все желания, полученные из Firestore (уже отсортированы по дате)
+let searchTerm = "";     // текущий поисковый запрос
+
+/* ------------------------------------------------------------------
+   7. ПОДПИСКА НА FIRESTORE (реалтайм-обновления)
+   ------------------------------------------------------------------ */
+function listenToWishes() {
+  const q = query(wishesCollection, orderBy("createdAt", "desc")); // новые сверху
+  onSnapshot(q, snapshot => {
+    allWishes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderWishes();
+  }, error => {
+    console.error("Ошибка чтения желаний из Firestore:", error);
+  });
+}
+
+/* ------------------------------------------------------------------
+   8. ФИЛЬТРАЦИЯ + ПОИСК + ОТРИСОВКА
+   ------------------------------------------------------------------ */
+function matchesSearch(wish, term) {
+  if (!term) return true;
+  const haystack = [
+    wish.title || "",
+    wish.description || "",
+    findCategory(wish.category).label
+  ].join(" ").toLowerCase();
+  return haystack.includes(term.toLowerCase());
+}
+
+function matchesCategory(wish, categoryFilter) {
+  return categoryFilter === "all" || wish.category === categoryFilter;
+}
+
+function renderWishes() {
+  const grid = document.getElementById("wishGrid");
+  const emptyState = document.getElementById("emptyState");
+
+  const filtered = allWishes.filter(w =>
+    matchesCategory(w, activeCategoryFilter) && matchesSearch(w, searchTerm)
+  );
+
+  grid.innerHTML = "";
+
+  if (filtered.length === 0) {
+    emptyState.style.display = "block";
+    return;
+  }
+  emptyState.style.display = "none";
+
+  filtered.forEach((wish, index) => {
+    const card = createWishCard(wish);
+    card.style.animationDelay = `${Math.min(index, 8) * 0.04}s`;
+    grid.appendChild(card);
+  });
+}
+
+/* ------------------------------------------------------------------
+   9. СОЗДАНИЕ КАРТОЧКИ ЖЕЛАНИЯ
+   ------------------------------------------------------------------ */
+function formatDate(timestamp) {
+  if (!timestamp || !timestamp.toDate) return "";
+  const date = timestamp.toDate();
+  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function createWishCard(wish) {
+  const category = findCategory(wish.category);
+  const priority = findPriority(wish.priority);
+  const status = findStatus(wish.status);
+
+  const card = document.createElement("article");
+  card.className = "wish-card";
+
+  card.innerHTML = `
+    <div class="category-tag">${category.emoji} ${category.label}</div>
+    <h3>${escapeHtml(wish.title || "")}</h3>
+    ${wish.description ? `<p class="wish-desc">${escapeHtml(wish.description)}</p>` : ""}
+    <div class="meta-row">
+      <span class="meta-badge">${priority.emoji} ${priority.label}</span>
+      <span class="meta-badge ${status.cls}">${status.emoji} ${status.label}</span>
+    </div>
+    <div class="date-row">${formatDate(wish.createdAt)}</div>
+    ${wish.link ? `<a class="open-link" href="${escapeAttr(wish.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>` : ""}
+  `;
+  return card;
+}
+
+// Защита от XSS при вставке пользовательского текста
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+function escapeAttr(str) {
+  return String(str).replace(/"/g, "&quot;");
+}
+
+/* ------------------------------------------------------------------
+   10. ОБРАБОТКА ФОРМЫ — СОХРАНЕНИЕ НОВОГО ЖЕЛАНИЯ
+   ------------------------------------------------------------------ */
+function initWishForm() {
+  const form = document.getElementById("wishForm");
+  const submitBtn = document.getElementById("submitBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const newWish = {
+      category: document.getElementById("fCategory").value,
+      title: document.getElementById("fTitle").value.trim(),
+      description: document.getElementById("fDescription").value.trim(),
+      link: document.getElementById("fLink").value.trim(),
+      priority: document.getElementById("fPriority").value,
+      status: document.getElementById("fStatus").value,
+      createdAt: serverTimestamp(),
+    };
+
+    if (!newWish.category || !newWish.title || !newWish.description || !newWish.priority || !newWish.status) {
+      return; // required-атрибуты в HTML уже подсвечивают пустые поля
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Сохраняем...";
+
+    try {
+      await addDoc(wishesCollection, newWish);
+      form.reset();
+      initFormSelects(); // возвращаем плейсхолдеры в select после reset
+    } catch (error) {
+      console.error("Не удалось сохранить желание:", error);
+      alert("Не получилось сохранить желание. Проверь подключение и настройки Firebase.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Сохранить желание";
+    }
+  });
+}
+
+/* ------------------------------------------------------------------
+   11. ПОИСК — обработчик поля ввода
+   ------------------------------------------------------------------ */
+function initSearch() {
+  const input = document.getElementById("searchInput");
+  input.addEventListener("input", () => {
+    searchTerm = input.value;
+    renderWishes();
+  });
+}
+
+/* ------------------------------------------------------------------
+   12. ТОЧКА ВХОДА
+   ------------------------------------------------------------------ */
+function init() {
+  initFormSelects();
+  initFilterChips();
+  initWishForm();
+  initSearch();
+  listenToWishes();
+}
+
+init();
+
+/* ------------------------------------------------------------------
+   ЗАДЕЛ НА БУДУЩЕЕ (не активно, но структура готова):
+   - loadPhoto(file) → Firebase Storage, поле photoUrl в документе
+   - toggleFavorite(wishId) → поле isFavorite: boolean
+   - addComment(wishId, text) → подколлекция wishes/{id}/comments
+   - editWish(wishId, data) → updateDoc(doc(db, "wishes", wishId), data)
+   - deleteWish(wishId) → deleteDoc(doc(db, "wishes", wishId))
+   - onAuthStateChanged → фильтрация wishes по ownerId для многопользовательского режима
+   ------------------------------------------------------------------ */
+</script>
+</body>
+</html>
